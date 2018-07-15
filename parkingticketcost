@@ -1,0 +1,127 @@
+'''
+This code reads the large public dataset using dictionaries and determine how much money diplomatic cars from Egypt 
+owe in total, which particular Egyptian car owes the most money and how much, and the year between 1995-2016 
+in which Egypt owed the most money and how much it was.
+'''
+
+import csv
+
+# Create empty list of dictionaries that'll contain only Egyptian diplomat plates 
+egypt = []
+
+# Open CSV file, use for loop to read through CSV file, and create a dictionary associated
+# with values in each row 
+# To get only the Egyptian diplomat plates, use if statement to check if the plates begin 
+# with 'DTH'. If so, append the dictionary to the list 'egypt'
+with open('Parking.csv') as parking_csv:
+    reader = csv.DictReader(parking_csv)
+    for row in reader:
+        d = dict(row)
+        plate = row['Plate']
+        if plate[0] == 'D' and plate[1] =='T' and plate[2] =='H':
+            egypt.append(d)
+            
+
+# Call 'amount_owed' function to find total amount owed by each car found
+# Add up these total values to get sum for all Egyptian diplomatic cars              
+def total(egypt):
+    total = 0
+    for i in egypt:
+        plate = i['Plate']
+        amount = amount_owed(egypt, plate)
+        num = amount[1]
+        total += num
+    return total
+
+
+# Call the most_owed function to determine the Egyptian diplomatic car that owes 
+# the most money and print the car's license plate number as well
+def most(egypt):
+    car = most_owed(egypt)
+    return car
+
+
+# Determine which year Egypt owed the most money and how much it was
+def year_amount(egypt):
+    # Initialize variables to be used later for dictionaries and comparing values
+    # dictionary will contain plates as keys and year and amounts as values
+    d_year = {}
+    # 'alld' dictionary will contain nested dictionaries of plates and amount due 
+    # that correspond to the same year
+    alld = {}
+    # 'final' is a dictionary used to contain the year and its corresponding total amounts
+    final = {}
+    # 'num_max' will be used later to compare and find max amount owed
+    num_max = 0
+
+    # Iterate through the 'egypt' dictionary of diplomatic cars and create dictionary 
+    # with plates as keys and years and amounts as values for only years 1999-2016
+    for j in egypt:
+        plate = j['Plate']
+        year = float(j['Issue Date'][-2:])
+        amount = j['Amount Due']
+        # Get rid of '$' sign for the amount due values to caste strings into floats
+        amount1 = float(amount.lstrip("$"))
+        if ((year >= 0 and year <=16) and not(year>16 and year<95) 
+            or (year >= 95 and year <= 99)):
+            d_year[plate] = year, amount1
+
+    # Iterate through 'd_year' dictionary with a for loop that finds the same years and 
+    # adds the corresponding plates and amount dues to its own dictionary 'same' which is 
+    # nested in a bigger dictionary 'alld' that contains year as values and corresponding 
+    #'same' dictionaries as values. 'same' is initialized inside the for loop so that a 
+    # new nested dictionary will be created for different years
+    for k in d_year:
+        same = {}
+        first = d_year[k][0]
+        same[k] = d_year[k]
+        
+        # If the year in the 'same' key-value pair matches the year that will be the key
+        # in the 'alld' dictionary, it can be added. 
+        for x in same:   
+            if same[x][0] == first:
+                # Check to make sure program is not iterating more than it needs to when 
+                # creating the dictionary.
+                # If the year in 'first' is in the 'alld' dictionary, continue merging 
+                #'same' with 'alld[first]'. Otherwise, set 'alld[first]' equal to 'same' 
+                if first in alld:
+                    alld[first] = {**same, **alld[first]}
+                else:
+                    alld[first] = same
+    
+    # To find the total amount due 't_year' for each year, use nested for loops to iterate 
+    # through the nested dictionaries of 'alld' and add together only the amounts due.
+    # Create an 'amountyear' dictionary inside a for loop that'll year as keys and 
+    # the 't_year' as values. 'amountyear' dictionaries will later be added to 'final'.
+    
+    for j in alld: 
+        amountyear = {}
+        t_year = 0
+        dict2=alld[j]
+        # Find sum and append to another dictionary for each year and its total amount owed
+        for n in dict2:
+            current = dict2[n][1] #gets amount owed in each of the smaller dictionaries 
+            t_year += current 
+            amountyear[j] = t_year
+            final[j] = amountyear
+    
+    # To find maximum total amount owed across all years of violation, use a for loop 
+    # to compare each number to the previous one and update'num_max' with larger numbers. 
+    for f in final:
+        temp = final[f][f]
+        if temp>num_max:
+            num_max = temp
+    # Use a for loop find the key associated with the 'num_max' value in 'final' dictionary
+    for y in final:
+        if final[y][y] == num_max:
+            found_year = y
+    
+    # Create and return a tuple that contains the year and amount of maximum amount owed 
+    result_tuple = (found_year, num_max)
+    return(result_tuple)
+
+# Call functions
+
+print("Total: ", total(egypt))
+print("Worst Offender's Plate and Amount: ", most_owed(egypt))
+print("Year and Amount of Max Amount Due: ", year_amount(egypt))
